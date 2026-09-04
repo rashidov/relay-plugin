@@ -22,14 +22,53 @@ holder=$(printf '%s' "$(hostname)|${CLAUDE_PROJECT_DIR:-}" \
   | { shasum -a 256 2>/dev/null || sha256sum 2>/dev/null; } \
   | cut -c1-32)
 
-out=$(curl -sS -m 100 -X POST "$url/v1/duty/wait" \
-  -H "authorization: Bearer $(cat "$token_file")" \
-  -H 'accept: text/plain' \
-  -H 'content-type: application/json' \
-  -d "{\"timeout\":90,\"holder\":\"$holder\"}" 2>/dev/null) || exit 0
+# Первая пауза после помехи; дальше удваивается до минуты.
+pause=1
 
-# Пусто — значит за окно ожидания ничего не пришло. Это не повод будить.
-[ -n "$out" ] || exit 0
+# Дольше этого не живём: забытый процесс не должен держать дежурство вечно.
+# Следующее событие сессии поднимет свежий.
+deadline=$(( $(date +%s) + 12 * 60 * 60 ))
 
-printf '%s\n' "$out" >&2
-exit 2
+# Ждём В ЦИКЛЕ, а не один раз.
+#
+# Окно ожидания у шины — полторы минуты, и пустое окно это норма, а не конец
+# смены. Фоновый хук после выхода сам не перезапускается: новый экземпляр
+# стартует только на следующем событии сессии. Значит выход по пустому окну
+# означал бы дежурство длиной в полторы минуты — а потом тишину, пока человек
+# не заговорит. Ровно та тишина, против которой дежурство и придумано.
+while [ "$(date +%s)" -lt "$deadline" ]; do
+  out=$(curl -sS -m 100 -X POST "$url/v1/duty/wait" \
+    -H "authorization: Bearer $(cat "$token_file")" \
+    -H 'accept: text/plain' \
+    -H 'content-type: application/json' \
+    -d "{\"timeout\":90,\"holder\":\"$holder\"}" 2>/dev/null)
+  code=$?
+
+  # Шина не ответила: сеть моргнула, сервис перезапустился. Это пауза, а не
+  # конец — ждём и пробуем снова, увеличивая паузу до минуты.
+  if [ "$code" -ne 0 ]; then
+    sleep "$pause"
+    pause=$(( pause * 2 ))
+    [ "$pause" -gt 60 ] && pause=60
+    continue
+  fi
+
+  pause=1
+
+  # Пусто — за окно ничего не пришло. Ждём дальше.
+  [ -n "$out" ] || continue
+
+  # Отказ шины приходит JSON-ом: дежурство держит другое рабочее место или
+  # доступ отозвали. Повторять бессмысленно — говорим и уходим.
+  case "$out" in
+    '{"error"'*)
+      printf 'Relay: дежурство не поднялось. %s\n' "$out" >&2
+      exit 2
+      ;;
+  esac
+
+  printf '%s\n' "$out" >&2
+  exit 2
+done
+
+exit 0
