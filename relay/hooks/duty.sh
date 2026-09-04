@@ -22,6 +22,32 @@ holder=$(printf '%s' "$(hostname)|${CLAUDE_PROJECT_DIR:-}" \
   | { shasum -a 256 2>/dev/null || sha256sum 2>/dev/null; } \
   | cut -c1-32)
 
+# Дежурим по одному на рабочее место.
+#
+# Хук стартует на старте сессии и после каждого хода, а ждёт он теперь в
+# цикле — значит к третьему ходу их набралось бы несколько, и все проснулись
+# бы на одном письме. Замок каталогом: `mkdir` неделим, и гонки на нём нет.
+#
+# Мёртвый замок снимаем сами: процесс мог упасть вместе с ноутбуком, и
+# дежурство не должно кончаться навсегда из-за оставшейся папки.
+lock="$HOME/.relay/duty.lock"
+mkdir -p "$HOME/.relay" 2>/dev/null
+
+if ! mkdir "$lock" 2>/dev/null; then
+  old=$(cat "$lock/pid" 2>/dev/null || echo '')
+
+  if [ -n "$old" ] && kill -0 "$old" 2>/dev/null; then
+    # Дежурит живой — второй не нужен.
+    exit 0
+  fi
+
+  rm -rf "$lock" 2>/dev/null
+  mkdir "$lock" 2>/dev/null || exit 0
+fi
+
+echo $$ > "$lock/pid"
+trap 'rm -rf "$lock" 2>/dev/null' EXIT INT TERM
+
 # Первая пауза после помехи; дальше удваивается до минуты.
 pause=1
 
