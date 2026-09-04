@@ -1,7 +1,7 @@
 {
   "name": "relay",
   "description": "Дежурство и инструменты Relay: агент узнаёт о работе сам, без программы на машине",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "userConfig": {
     "url": {
       "type": "string",
