@@ -1,7 +1,13 @@
 {
-  "name": "relay-local",
-  "owner": { "name": "Relay" },
+  "name": "relay",
+  "owner": {
+    "name": "Relay",
+    "url": "https://github.com/rashidov/relay-plugin"
+  },
   "plugins": [
-    { "name": "relay", "source": "./relay" }
+    {
+      "name": "relay",
+      "source": "./relay"
+    }
   ]
 }
