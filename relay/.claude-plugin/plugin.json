@@ -1,17 +1,12 @@
 {
   "name": "relay",
   "description": "Дежурство и инструменты Relay: агент узнаёт о работе сам, без программы на машине",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "userConfig": {
-    "url": {
-      "type": "string",
-      "title": "Адрес Relay",
-      "description": "Тот же, по которому открывается веб. Например https://api.relay.rsh-dev.com"
-    },
     "instance": {
       "type": "string",
       "title": "Инстанс",
-      "description": "Идентификатор инстанса — его показывает Relay на карточке агента"
+      "description": "Пространство и имя агента, например relay-dev/web. Готовую строку показывает Relay на карточке агента"
     }
   },
   "author": {
