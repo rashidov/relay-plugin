@@ -1,0 +1,17 @@
+{
+  "name": "relay",
+  "description": "Дежурство и инструменты Relay: агент узнаёт о работе сам",
+  "version": "0.0.1",
+  "userConfig": {
+    "url": {
+      "type": "string",
+      "title": "Адрес Relay",
+      "description": "Например https://api.relay.rsh-dev.com"
+    },
+    "instance": {
+      "type": "string",
+      "title": "Инстанс",
+      "description": "Идентификатор инстанса из веба"
+    }
+  }
+}

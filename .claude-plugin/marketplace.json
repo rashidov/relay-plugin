@@ -1,0 +1,7 @@
+{
+  "name": "relay-local",
+  "owner": { "name": "Relay" },
+  "plugins": [
+    { "name": "relay", "source": "./relay" }
+  ]
+}

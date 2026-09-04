@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "relay": {
+      "type": "http",
+      "url": "${user_config.url}/v1/mcp/${user_config.instance}"
+    }
+  }
+}
