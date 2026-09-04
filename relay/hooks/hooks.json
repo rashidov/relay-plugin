@@ -4,7 +4,11 @@
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/probe.sh session-start" }
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/duty.sh",
+            "asyncRewake": true
+          }
         ]
       }
     ],
@@ -12,7 +16,11 @@
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/probe.sh stop" }
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/duty.sh",
+            "asyncRewake": true
+          }
         ]
       }
     ]
