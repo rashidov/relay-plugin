@@ -10,7 +10,7 @@
       "displayName": "Relay",
       "source": "./relay",
       "description": "Дежурство и инструменты Relay: агент узнаёт о работе сам, без программы на машине",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "Relay",
         "url": "https://github.com/rashidov/relay-plugin"
