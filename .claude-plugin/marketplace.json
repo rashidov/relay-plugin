@@ -1,5 +1,6 @@
 {
   "name": "relay",
+  "description": "Плагин Relay: дежурство агентов. Кто есть агент в проекте — задаётся подключением MCP в самом проекте, а не здесь.",
   "owner": {
     "name": "Relay",
     "url": "https://github.com/rashidov/relay-plugin"
@@ -9,8 +10,8 @@
       "name": "relay",
       "displayName": "Relay",
       "source": "./relay",
-      "description": "Дежурство и инструменты Relay: агент узнаёт о работе сам, без программы на машине",
-      "version": "0.2.0",
+      "description": "Дежурство Relay: агент узнаёт о работе сам, без программы на машине",
+      "version": "0.3.0",
       "author": {
         "name": "Relay",
         "url": "https://github.com/rashidov/relay-plugin"

@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "relay": {
-      "type": "http",
-      "url": "https://api.relay.rsh-dev.com/v1/mcp/${user_config.instance}"
-    }
-  }
-}
