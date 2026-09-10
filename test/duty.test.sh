@@ -17,6 +17,7 @@ failed=0
 
 cleanup() {
   [ -n "${bus_pid:-}" ] && kill "$bus_pid" 2>/dev/null
+  [ -n "${slow_pid:-}" ] && kill "$slow_pid" 2>/dev/null
   rm -rf "$work"
 }
 trap cleanup EXIT INT TERM
@@ -48,6 +49,12 @@ PY
 
 python3 "$work/bus.py" "$port" &
 bus_pid=$!
+
+# Вторая шина — медленная: держит запрос, пока мы смотрим в список процессов.
+slow_port=$((port + 1))
+sed 's/def do_POST(self):/def do_POST(self):\n        import time; time.sleep(6)/' "$work/bus.py" > "$work/slow.py"
+python3 "$work/slow.py" "$slow_port" &
+slow_pid=$!
 
 # Ждём, пока шина поднимется: без этого первый же прогон ловит отказ связи и
 # уходит в паузу, а тест выглядит зависшим.
@@ -120,6 +127,59 @@ check "своё дежурство уже идёт — уходим тихо" "$
 run /дом/проект-б
 check "соседний проект дежурит как ни в чём не бывало" "$?" "2"
 rm -rf "$work/home/.relay/locks/-дом-проект-а"
+
+echo
+echo "токен не виден в списке процессов"
+# Пока хук ждёт, ищем токен в аргументах всех процессов машины.
+#
+# `ps` показывает аргументы ВСЕХ процессов, и заголовок, переданный через
+# `-H "Bearer …"`, клал трёхмесячный ключ на всеобщее обозрение: на сервере с
+# постоянным агентом его прочитал бы любой процесс. Найдено на живой
+# установке 2026-09-10.
+(
+  HOME="$work/home" \
+  RELAY_URL="http://127.0.0.1:$slow_port" \
+  CLAUDE_PROJECT_DIR=/дом/проект-а \
+    sh "$hook" >/dev/null 2>&1 &
+  echo $! > "$work/hook.pid"
+)
+sleep 1
+
+# Скобки в образце — чтобы сам `grep` не попал в собственный вывод: его
+# аргументы тоже видны в `ps`, и без этого проверка всегда «находит» утечку.
+token_visible() { ps -Ao args 2>/dev/null | grep -q "TOKEN[-]A"; }
+
+# Сначала — сам хук: пока он ждёт, токена в аргументах быть не должно.
+if token_visible; then
+  echo "  ПРОВАЛ токен виден в аргументах процессов"
+  ps -Ao pid,args 2>/dev/null | grep "TOKEN[-]A" | head -3 | sed 's/^/       /'
+  failed=$((failed + 1))
+else
+  echo "  ok   токен в аргументах не светится"
+fi
+
+# А теперь убеждаемся, что проверка вообще умеет видеть утечку: запускаем
+# заведомо дырявый процесс с токеном в аргументах. Без этого зелёный
+# результат выше ничего не значил бы.
+#
+# Две команды, а не одна: с одной оболочка подменяет себя ею же (`exec`), и
+# подставной аргумент исчезает вместе с ней.
+sh -c 'sleep 3; :' TOKEN-A &
+control_pid=$!
+sleep 0.5
+
+if token_visible; then
+  echo "  ok   проверка умеет видеть утечку"
+else
+  echo "  ПРОВАЛ проверка слепа — зелёный результат выше ничего не доказал"
+  failed=$((failed + 1))
+fi
+
+kill "$control_pid" 2>/dev/null
+
+kill "$(cat "$work/hook.pid")" 2>/dev/null
+pkill -f "$slow_port/v1/duty/wait" 2>/dev/null
+rm -rf "$work/home/.relay/locks"
 
 echo
 echo "мёртвый замок снимается сам"
